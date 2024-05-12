@@ -1,0 +1,3 @@
+#!/bin/bash
+
+# cache-dir: ~/.aws/cli/cache/<xid>.json

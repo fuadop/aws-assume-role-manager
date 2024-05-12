@@ -1,0 +1,133 @@
+#!/usr/bin/python3
+
+import json, subprocess
+import os, re, string, random
+from argparse import ArgumentParser
+from configparser import ConfigParser
+
+config = ConfigParser()
+parser = ArgumentParser()
+
+config.read(os.path.expanduser('~/.aws/config'))
+parser.add_argument(
+    '-d',
+    '--duration',
+    type=int,
+    default=900,
+    required=False,
+    help='Session duration in seconds; min value 900 (15mins)'
+)
+
+_opts = [] # type: list[str]
+_args = parser.parse_args()
+_profiles = config.sections()
+
+for _p in _profiles:
+    _profile = config[_p]
+    if _profile.get('role_arn'):
+        _opts.append(_p)
+
+
+if len(_opts) < 1:
+    print('There is no assume role profile in ~/.aws/config')
+    print('https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-files.html')
+    exit(1)
+
+_names = list(
+    map(
+        lambda x: re.sub(r'^profile\s+', '', x, flags=re.IGNORECASE),
+        _opts,
+    ),
+)
+
+print('** Profiles **')
+
+for i in range(0, len(_names)):
+    print(f'{i}) {_names[i]}')
+
+_in = ''
+__is_numeric = False
+while __is_numeric != True:
+    _in = input('Select profile: ')
+    __is_numeric = _in.isnumeric() and int(_in) < len(_names)
+
+__in = int(_in)
+__pid = _opts[__in] 
+__profile = config[__pid]
+__request_id = lambda: ''.join(random.choices(string.ascii_lowercase, k=5))
+
+print(f'Selected Profile: {_names[__in]}')
+
+# get the required fields
+__mfa = __profile.get('mfa_serial')
+__arn = __profile.get('role_arn', '')
+__src = __profile.get('source_profile', '')
+__region = __profile.get('profile', 'eu-west-2')
+__session = __profile.get('role_session_name', '') + '-' + __request_id()
+
+__command = f'aws --profile {__src} --region {__region} sts assume-role --role-arn {__arn}' \
+        + f' --role-session-name {__session} --duration-seconds {_args.duration} --output json'
+
+if __mfa is not None and __mfa.strip() != '': 
+    __token = '' 
+    while __token.strip() == '':
+        __token = input('Enter MFA code: ')
+
+    __command += f' --serial-number {__mfa} --token-code {__token}'
+
+print('---')
+print(__command)
+print('---')
+
+# exec the command
+__res = subprocess.run(
+    __command.split(' '),
+    text=True,
+    stdout=subprocess.PIPE,
+)
+
+if __res.returncode != 0:
+    print(__res.stdout)
+    exit(1)
+
+__role = json.loads(__res.stdout)
+
+__creds = __role.get('Credentials', {})
+__access_key_id = __creds.get('AccessKeyId')
+__session_token = __creds.get('SessionToken')
+__secret_access_key = __creds.get('SecretAccessKey')
+
+__profile_name = __request_id() # generate random profile name
+__expiration_date = __creds.get('Expiration')
+
+# append to credentials file
+with open(os.path.expanduser('~/.aws/credentials'), 'a') as __f:
+    __f.writelines(
+        [
+            '\n',
+            f'[{__profile_name}]\n',
+            f'aws_access_key_id = {__access_key_id}\n',
+            f'aws_secret_access_key = {__secret_access_key}\n',
+            f'aws_session_token = {__session_token}\n',
+        ],
+    )
+
+# append to config file
+with open(os.path.expanduser('~/.aws/config'), 'a') as __f:
+    __f.writelines(
+        [
+            '\n',
+            f'[profile {__profile_name}]\n',
+            f'region = {__region}\n'
+        ],
+    )
+
+print('Profile created !')
+print(f'The profile name is: {__profile_name}')
+print(f'The profile will expire at: {__expiration_date}')
+
+print()
+print('assumerd will automatically remove the profile after expiration')
+
+# create assumerd agent/daemon if not running
+
