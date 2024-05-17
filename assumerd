@@ -1,3 +1,65 @@
-#!/bin/bash
+#!/usr/bin/python3
 
-# cache-dir: ~/.aws/cli/cache/<xid>.json
+import os
+from datetime import datetime
+from configparser import ConfigParser
+
+def to_date(_iso):
+    # type: (str) -> datetime | None
+    try:
+        return datetime.fromisoformat(_iso)
+    except:
+        return None
+
+def to_epoch(_dt):
+    # type: (datetime) -> int
+    return int(_dt.timestamp())
+
+def delete_profile(_name):
+    # type: (str) -> None
+    __p_config = ConfigParser()
+    __c_config = ConfigParser()
+
+    __aws_path = os.path.expanduser('~/.aws')
+
+    __p_config.read(f'{__aws_path}/config')
+    __c_config.read(f'{__aws_path}/credentials')
+
+    __c_config.remove_section(_name)
+    __p_config.remove_section(f'profile {_name}')
+
+    with open(f'{__aws_path}/config', 'w') as __f:
+        __p_config.write(__f)
+
+    with open(f'{__aws_path}/credentials', 'w') as __f:
+        __c_config.write(__f)
+
+__e_path = os.path.expanduser('~/.aws/cli/.assumerd/expires')
+
+# find the expiry file
+config = ConfigParser()
+
+config.read(__e_path)
+_profiles = config.sections()
+
+_expired_profiles = []
+
+for _p in _profiles:
+    _profile = config[_p]
+    _expires = to_date(_profile.get('expiration'))
+
+    if isinstance(_expires, datetime):
+        if to_epoch(_expires) < to_epoch(datetime.now()):
+            # time to snap fingers
+            config.remove_section(_p)
+            _expired_profiles.append(_p)
+
+if len(_expired_profiles) < 1:
+    exit(0)
+
+for _p in _expired_profiles:
+    delete_profile(_p) # Thanos do your thing
+
+# let's update _e_path file
+with open(__e_path, 'w') as __f:
+    config.write(__f)

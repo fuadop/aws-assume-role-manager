@@ -10,6 +10,12 @@ parser = ArgumentParser()
 
 config.read(os.path.expanduser('~/.aws/config'))
 parser.add_argument(
+    '-v',
+    '--verbose',
+    action='store_true',
+    help='Enable verbose logging'
+)
+parser.add_argument(
     '-d',
     '--duration',
     type=int,
@@ -75,9 +81,10 @@ if __mfa is not None and __mfa.strip() != '':
 
     __command += f' --serial-number {__mfa} --token-code {__token}'
 
-print('---')
-print(__command)
-print('---')
+if _args.verbose:
+    print('---')
+    print(__command)
+    print('---')
 
 # exec the command
 __res = subprocess.run(
@@ -129,5 +136,24 @@ print(f'The profile will expire at: {__expiration_date}')
 print()
 print('assumerd will automatically remove the profile after expiration')
 
-# create assumerd agent/daemon if not running
+# append expiry date to cache
+# file for assumerd to pickup during cycle
+__res = subprocess.run(
+    # make the folder if it doesn't exist yet
+    ['mkdir', '-p', os.path.expanduser('~/.aws/cli/.assumerd')],
+    text=True,
+    stdout=subprocess.PIPE,
+)
+
+if __res.returncode != 0:
+    print(f'You need to manually remove this credential after expiry. Reason: {__res.stdout}')
+    exit(0)
+
+with open(os.path.expanduser('~/.aws/cli/.assumerd/expires'), 'a') as __f:
+    __f.writelines(
+        [
+            f'\n[{__profile_name}]',
+            f'\nexpiration = {__expiration_date}'
+        ],
+    )
 

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>Label</key>
+        <string>io.github.fuadop.assumerd</string>
+        <key>Program</key>
+        <string>/usr/local/bin/assumerd</string>
+        <key>TimeOut</key>
+        <string>60</string>
+        <key>StartInterval</key>
+        <string>300</string>
+        <key>ProcessType</key>
+        <string>Background</string>
+        <key>KeepAlive</key>
+        <false/>
+    </dict>
+</plist>
