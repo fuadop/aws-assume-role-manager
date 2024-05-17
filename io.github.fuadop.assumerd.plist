@@ -7,9 +7,9 @@
         <key>Program</key>
         <string>/usr/local/bin/assumerd</string>
         <key>TimeOut</key>
-        <string>60</string>
+        <integer>60</integer>
         <key>StartInterval</key>
-        <string>300</string>
+        <integer>300</integer>
         <key>ProcessType</key>
         <string>Background</string>
         <key>KeepAlive</key>

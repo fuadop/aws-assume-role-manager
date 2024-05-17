@@ -54,6 +54,6 @@ git clone https://github.com/fuadop/aws-assume-role-manager.git
 # change directory into the clone
 cd aws-assume-role-manager
 
-# run the install script with sudo
-sudo ./install.sh
+# run the install script
+./install.sh
 ```

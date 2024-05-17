@@ -3,21 +3,21 @@
 # put assumer[d/ctl] in /usr/local/bin folder
 # hopefully it is part of $PATH variable
 if test -e ./assumerd; then
-    cp ./assumerd /usr/local/bin/assumerd
+    sudo cp ./assumerd /usr/local/bin/assumerd
 else
     echo './assumerd not found'
     exit 1;
 fi
 
 if test -e ./assumerctl; then
-    cp ./assumerctl /usr/local/bin/assumerctl
+    sudo cp ./assumerctl /usr/local/bin/assumerctl
 else
     echo './assumerctl not found'
     exit 1;
 fi
 
-chmod +x /usr/local/bin/assumerd
-chmod +x /usr/local/bin/assumerctl
+sudo chmod +x /usr/local/bin/assumerd
+sudo chmod +x /usr/local/bin/assumerctl
 
 # create init system file
 # depending on the OS of the client
@@ -43,8 +43,9 @@ if [[ $__os == 'Darwin' ]]; then
         # the gui/ domain target
         # you can run only when the user is logged-in
         __id=$(id -u)
-        launchctl bootstrap gui/$__id $__agents_path/io.github.fuadop.assumerd.plist
-        launchctl enable gui/$__Id/$__agents_path/io.github.fuadop.assumerd.plist
+
+        sudo launchctl bootstrap gui/$__id $__agents_path/io.github.fuadop.assumerd.plist
+        sudo launchctl enable gui/$__id/io.github.fuadop.assumerd.plist
     else
         echo 'plist file not found'
         exit 1;
