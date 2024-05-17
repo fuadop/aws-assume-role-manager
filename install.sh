@@ -44,6 +44,7 @@ if [[ $__os == 'Darwin' ]]; then
         # you can run only when the user is logged-in
         __id=$(id -u)
         launchctl bootstrap gui/$__id $__agents_path/io.github.fuadop.assumerd.plist
+        launchctl enable gui/$__Id/$__agents_path/io.github.fuadop.assumerd.plist
     else
         echo 'plist file not found'
         exit 1;
